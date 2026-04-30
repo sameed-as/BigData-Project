@@ -1,0 +1,28 @@
+kafka:
+  broker: 'kafka:9092'
+  topic: 'crime_events'
+  publication_rate: 1.0  # rows per second
+  dataset_path: '/data/crime.csv'
+
+storm:
+  zookeeper: 'zookeeper:2181'
+  window_size_minutes: 5
+  slide_interval_minutes: 1
+  anomaly_threshold: 50
+
+postgres:
+  host: 'postgres'
+  port: 5432
+  db: 'crime_db'
+  user: 'admin'
+  password: 'password'
+
+mongo:
+  host: 'mongo'
+  port: 27017
+  db: 'crime_db'
+  alerts_collection: 'alert_logs'
+
+spark:
+  master: 'local[*]'
+  app_name: 'CrimeAnalyticsBatch'
