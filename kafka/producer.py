@@ -30,14 +30,14 @@ def run_producer():
         for row in reader:
             # Construct the payload
             payload = {
-                "CASE NUMBER": row.get("CASE NUMBER"),
-                "DATE": row.get("DATE"),
-                "BLOCK": row.get("BLOCK"),
-                "PRIMARY TYPE": row.get("PRIMARY TYPE"),
-                "DISTRICT": row.get("DISTRICT"),
-                "ARREST": row.get("ARREST"),
-                "LATITUDE": row.get("LATITUDE"),
-                "LONGITUDE": row.get("LONGITUDE")
+                "CASE NUMBER": row.get("Case Number") or row.get("CASE NUMBER"),
+                "DATE":         row.get("Date")         or row.get("DATE"),
+                "BLOCK":        row.get("Block")        or row.get("BLOCK"),
+                "PRIMARY TYPE": row.get("Primary Type") or row.get("PRIMARY TYPE"),
+                "DISTRICT":     row.get("District")     or row.get("DISTRICT"),
+                "ARREST":       row.get("Arrest")       or row.get("ARREST"),
+                "LATITUDE":     row.get("Latitude")     or row.get("LATITUDE"),
+                "LONGITUDE":    row.get("Longitude")    or row.get("LONGITUDE"),
             }
             
             # Send to Kafka

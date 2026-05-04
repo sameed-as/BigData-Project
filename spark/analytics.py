@@ -4,7 +4,7 @@ from pyspark.ml.feature import VectorAssembler
 from preprocessing import load_and_clean_data
 
 def run_batch_analytics(spark, db_properties, db_url):
-    data_dir = '../data'
+    data_dir = '/data'
     datasets = load_and_clean_data(spark, data_dir)
     
     df_crime = datasets['crime']
@@ -45,7 +45,9 @@ def run_batch_analytics(spark, db_properties, db_url):
     arrest_rates = crimes_grouped.join(arrests_grouped, ["PRIMARY TYPE", "DISTRICT"], "left_outer") \
         .withColumn("total_arrests", when(col("total_arrests").isNull(), 0).otherwise(col("total_arrests"))) \
         .withColumn("arrest_rate", round(col("total_arrests") / col("total_crimes"), 4)) \
-        .withColumn("race", col("PRIMARY TYPE")) # Adding dummy race for now as inner join lost it if we grouped by crime only
+        .withColumnRenamed("PRIMARY TYPE", "primary_type") \
+        .withColumnRenamed("DISTRICT", "district") \
+        .withColumn("race", col("primary_type"))  # placeholder: race data not in this dataset
     
     arrest_rates.write.jdbc(url=db_url, table="arrest_rates", mode="append", properties=db_properties)
     
@@ -74,7 +76,10 @@ def run_batch_analytics(spark, db_properties, db_url):
 
 if __name__ == "__main__":
     from pyspark.sql import SparkSession
-    spark = SparkSession.builder.appName("CrimeAnalyticsBatch").getOrCreate()
+    spark = SparkSession.builder \
+        .appName("CrimeAnalyticsBatch") \
+        .config("spark.jars.packages", "org.postgresql:postgresql:42.5.4") \
+        .getOrCreate()
     db_properties = {
         "user": "admin",
         "password": "password",

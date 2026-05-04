@@ -57,6 +57,9 @@ services:
       - zookeeper
     ports:
       - '6627:6627'
+    volumes:
+      - ../storm:/app/storm
+      - ../config:/app/config
 
   supervisor:
     image: 'storm:2.5.0'
@@ -65,6 +68,9 @@ services:
     depends_on:
       - nimbus
       - zookeeper
+    volumes:
+      - ../storm:/app/storm
+      - ../config:/app/config
 
   storm-ui:
     image: 'storm:2.5.0'
@@ -84,6 +90,8 @@ services:
     volumes:
       - ../:/app
     tty: true
+    ports:
+      - '8501:8501'
     depends_on:
       - kafka
       - postgres

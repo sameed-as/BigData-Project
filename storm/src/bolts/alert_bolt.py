@@ -60,7 +60,7 @@ class AlertBolt(Bolt):
             # Postgres (make sure table `alerts` is created in init.sql)
             with self.pg_conn.cursor() as cur:
                 cur.execute(
-                    "INSERT INTO alerts (district, timestamp, event_count, threshold, severity) VALUES (%s, %s, %s, %s, %s)",
+                    "INSERT INTO alerts (district, timestamp, event_count, threshold, alert_severity_level) VALUES (%s, %s, %s, %s, %s)",
                     (district, dt_str, count, threshold, 'HIGH')
                 )
             self.logger.info(f"Alert saved: District {district} at {dt_str} with {count} events.")

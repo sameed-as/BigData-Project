@@ -94,7 +94,7 @@ with placeholder.container():
                 
         with col4:
             st.write("**Crime Count by Month**")
-            query_trend = "SELECT month, total_crimes FROM crime_trends_monthly ORDER BY month"
+            query_trend = "SELECT month, SUM(crime_count) as total_crimes FROM crime_trends GROUP BY month ORDER BY month"
             df_trend = pd.read_sql(query_trend, conn)
             if not df_trend.empty:
                 st.line_chart(data=df_trend.set_index("month"))

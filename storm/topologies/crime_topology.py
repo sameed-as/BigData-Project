@@ -1,3 +1,5 @@
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from streamparse import Grouping, Topology
 from src.spouts.kafka_spout import CrimeKafkaSpout
 from src.bolts.parse_bolt import ParseBolt
