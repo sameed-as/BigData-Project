@@ -64,10 +64,9 @@ with placeholder.container():
     with col2:
         st.subheader("🗺️ Crime Hotspots (K-Means)")
         try:
-            conn = get_pg_connection()
-            # Assuming 'hotspots' table was created by Spark job
-            query = "SELECT latitude, longitude, cluster_id FROM hotspots LIMIT 1000"
-            df_hotspots = pd.read_sql(query, conn)
+            with get_pg_connection() as conn:
+                query = "SELECT latitude, longitude, cluster_id FROM hotspots LIMIT 1000"
+                df_hotspots = pd.read_sql(query, conn)
             if not df_hotspots.empty:
                 # rename for streamlit map
                 df_hotspots = df_hotspots.rename(columns={"latitude": "lat", "longitude": "lon"})
@@ -80,13 +79,13 @@ with placeholder.container():
     st.markdown("---")
     st.subheader("📊 Batch Analytics: Crime Trends & Arrest Rates")
     try:
-        conn = get_pg_connection()
         col3, col4 = st.columns(2)
         
         with col3:
             st.write("**Top Crime Types by Arrest Rate**")
-            query_arrest = "SELECT primary_type, arrest_rate FROM top_10_arrest_rates ORDER BY arrest_rate DESC LIMIT 10"
-            df_arrest = pd.read_sql(query_arrest, conn)
+            with get_pg_connection() as conn:
+                query_arrest = "SELECT primary_type, arrest_rate FROM top_10_arrest_rates ORDER BY arrest_rate DESC LIMIT 10"
+                df_arrest = pd.read_sql(query_arrest, conn)
             if not df_arrest.empty:
                 st.bar_chart(data=df_arrest.set_index("primary_type"))
             else:
@@ -94,8 +93,9 @@ with placeholder.container():
                 
         with col4:
             st.write("**Crime Count by Month**")
-            query_trend = "SELECT month, SUM(crime_count) as total_crimes FROM crime_trends GROUP BY month ORDER BY month"
-            df_trend = pd.read_sql(query_trend, conn)
+            with get_pg_connection() as conn:
+                query_trend = "SELECT month, SUM(crime_count) as total_crimes FROM crime_trends GROUP BY month ORDER BY month"
+                df_trend = pd.read_sql(query_trend, conn)
             if not df_trend.empty:
                 st.line_chart(data=df_trend.set_index("month"))
             else:
