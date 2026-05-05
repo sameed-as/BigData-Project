@@ -48,7 +48,7 @@ services:
     volumes:
       - ../data:/data
       - ../spark:/opt/spark-apps
-    command: tail -f /dev/null
+    command: bash -c "pip install numpy && tail -f /dev/null"
   nimbus:
     image: 'storm:2.5.0'
     container_name: nimbus
