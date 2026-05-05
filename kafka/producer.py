@@ -28,23 +28,27 @@ def run_producer():
     with open(dataset_path, mode='r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            # Construct the payload
-            payload = {
-                "CASE NUMBER": row.get("Case Number") or row.get("CASE NUMBER"),
-                "DATE":         row.get("Date")         or row.get("DATE"),
-                "BLOCK":        row.get("Block")        or row.get("BLOCK"),
-                "PRIMARY TYPE": row.get("Primary Type") or row.get("PRIMARY TYPE"),
-                "DISTRICT":     row.get("District")     or row.get("DISTRICT"),
-                "ARREST":       row.get("Arrest")       or row.get("ARREST"),
-                "LATITUDE":     row.get("Latitude")     or row.get("LATITUDE"),
-                "LONGITUDE":    row.get("Longitude")    or row.get("LONGITUDE"),
-            }
-            
-            # Send to Kafka
-            producer.send(topic, payload)
-            
-            # Sleep to match publication rate
-            time.sleep(1.0 / rate)
+            try:
+                # Construct the payload
+                payload = {
+                    "CASE NUMBER": row.get("Case Number") or row.get("CASE NUMBER"),
+                    "DATE":         row.get("Date")         or row.get("DATE"),
+                    "BLOCK":        row.get("Block")        or row.get("BLOCK"),
+                    "PRIMARY TYPE": row.get("Primary Type") or row.get("PRIMARY TYPE"),
+                    "DISTRICT":     row.get("District")     or row.get("DISTRICT"),
+                    "ARREST":       row.get("Arrest")       or row.get("ARREST"),
+                    "LATITUDE":     row.get("Latitude")     or row.get("LATITUDE"),
+                    "LONGITUDE":    row.get("Longitude")    or row.get("LONGITUDE"),
+                }
+                
+                # Send to Kafka
+                producer.send(topic, payload)
+                
+                # Sleep to match publication rate
+                time.sleep(1.0 / rate)
+            except Exception as e:
+                print(f"Error processing row, skipping: {e}")
+                continue
 
 if __name__ == "__main__":
     try:
