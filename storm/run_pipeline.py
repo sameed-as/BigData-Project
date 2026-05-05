@@ -54,7 +54,8 @@ msg_count = {'received': 0, 'parsed': 0, 'anomalies': 0}
 
 # --------------------------------------------------------------------------- #
 q_raw      = Queue(maxsize=5000)   # Kafka -> Parse
-q_parsed   = Queue(maxsize=5000)   # Parse -> District/Window
+q_parsed   = Queue(maxsize=5000)   # Parse -> District
+q_district = Queue(maxsize=5000)   # District -> Window
 q_windowed = Queue(maxsize=5000)   # Window -> Anomaly
 q_alerts   = Queue(maxsize=1000)   # Anomaly -> Alert
 
@@ -103,13 +104,23 @@ def parse_bolt():
             log.warning(f"Parse error: {e}")
 
 # --------------------------------------------------------------------------- #
-# Stage 3 – Window Bolt (sliding window counter per district)
+# Stage 3 – District Bolt (groups and tags by district)
+# --------------------------------------------------------------------------- #
+def district_bolt():
+    while True:
+        record = q_parsed.get()
+        district = record.get('DISTRICT', 'UNKNOWN')
+        # Emits district-tagged tuples
+        q_district.put({'district': district, 'record': record})
+
+# --------------------------------------------------------------------------- #
+# Stage 4 – Window Bolt (sliding window counter per district)
 # --------------------------------------------------------------------------- #
 def window_bolt():
     counts = defaultdict(list)
     while True:
-        record = q_parsed.get()
-        district = record.get('DISTRICT', 'UNKNOWN')
+        item = q_district.get()
+        district = item['district']
         now = time.time()
         counts[district].append(now)
         # Evict events outside the window
@@ -117,7 +128,7 @@ def window_bolt():
         q_windowed.put({'district': district, 'count': len(counts[district]), 'ts': now})
 
 # --------------------------------------------------------------------------- #
-# Stage 4 – Anomaly Bolt
+# Stage 5 – Anomaly Bolt
 # --------------------------------------------------------------------------- #
 def anomaly_bolt():
     last_alert = defaultdict(lambda: 0)
@@ -133,7 +144,7 @@ def anomaly_bolt():
             log.info(f"🚨 ANOMALY: District {district} – {count} events (threshold={THRESHOLD})")
 
 # --------------------------------------------------------------------------- #
-# Stage 5 – Alert Bolt (write to MongoDB + PostgreSQL)
+# Stage 6 – Alert Bolt (write to MongoDB + PostgreSQL)
 # --------------------------------------------------------------------------- #
 def alert_bolt():
     mongo  = pymongo.MongoClient(f"mongodb://{MONGO_HOST}:{MONGO_PORT}/")
@@ -176,6 +187,7 @@ if __name__ == '__main__':
     stages = [
         threading.Thread(target=kafka_spout,  name="kafka-spout",  daemon=True),
         threading.Thread(target=parse_bolt,   name="parse-bolt",   daemon=True),
+        threading.Thread(target=district_bolt,name="district-bolt",daemon=True),
         threading.Thread(target=window_bolt,  name="window-bolt",  daemon=True),
         threading.Thread(target=anomaly_bolt, name="anomaly-bolt", daemon=True),
         threading.Thread(target=alert_bolt,   name="alert-bolt",   daemon=True),
@@ -190,6 +202,6 @@ if __name__ == '__main__':
             log.info(f"Throughput – received:{msg_count['received']} parsed:{msg_count['parsed']} "
                      f"anomalies:{msg_count['anomalies']} | "
                      f"Queue depths – raw:{q_raw.qsize()} parsed:{q_parsed.qsize()} "
-                     f"windowed:{q_windowed.qsize()} alerts:{q_alerts.qsize()}")
+                     f"district:{q_district.qsize()} windowed:{q_windowed.qsize()} alerts:{q_alerts.qsize()}")
     except KeyboardInterrupt:
         log.info("Pipeline stopped.")
