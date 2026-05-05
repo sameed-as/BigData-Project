@@ -85,7 +85,7 @@ with placeholder.container():
         
         with col3:
             st.write("**Top Crime Types by Arrest Rate**")
-            query_arrest = "SELECT primary_type, arrest_rate FROM arrest_rates ORDER BY arrest_rate DESC LIMIT 10"
+            query_arrest = "SELECT primary_type, arrest_rate FROM top_10_arrest_rates ORDER BY arrest_rate DESC LIMIT 10"
             df_arrest = pd.read_sql(query_arrest, conn)
             if not df_arrest.empty:
                 st.bar_chart(data=df_arrest.set_index("primary_type"))
