@@ -22,26 +22,31 @@ This project implements a Lambda Architecture for processing and analyzing publi
 - `dashboard/` - `app.py` for Streamlit visualization
 
 ## Execution
+We provide a `Makefile` to simplify starting and stopping the entire pipeline, ensuring reproducibility.
+
 1. **Start Infrastructure:**
    ```bash
-   cd docker
-   docker-compose up -d
+   make up
    ```
 2. **Run Batch Analytics (Spark):**
    ```bash
-   docker exec -it spark spark-submit /opt/spark-apps/preprocessing.py
+   make batch-analytics
    ```
-3. **Start Real-Time Topology (Storm):**
+3. **Start Real-Time Topology (Storm Speed Layer):**
    ```bash
-   docker exec -it runner sparse submit -n nimbus
+   make stream-pipeline
    ```
-4. **Start Kafka Producer:**
+4. **Start Kafka Producer (Data Simulation):**
    ```bash
-   docker exec -it runner python /app/kafka/producer.py
+   make start-producer
    ```
 5. **Launch Dashboard:**
    ```bash
-   docker exec -it runner streamlit run /app/dashboard/app.py
+   make dashboard
+   ```
+6. **Shut Down Services:**
+   ```bash
+   make down
    ```
 
 ## Contributors
