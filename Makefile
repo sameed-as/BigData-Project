@@ -21,7 +21,7 @@ batch-analytics:
 	sudo docker exec -it spark /opt/spark/bin/spark-submit --driver-memory 4g --executor-memory 4g --packages org.postgresql:postgresql:42.5.4 /opt/spark-apps/analytics.py
 
 stream-pipeline:
-	sudo docker exec -it -e IN_DOCKER=1 runner python3 /app/storm/run_pipeline.py
+	sudo docker exec -it -e LEIN_ROOT=yes runner bash -c "cd /app/storm && sparse submit -f -e prod"
 
 start-producer:
 	sudo docker exec -it runner python3 /app/kafka/producer.py

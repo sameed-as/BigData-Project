@@ -1,8 +1,26 @@
 # Execution Instructions: Chicago Crime Analytics
 
-This document outlines the correct, step-by-step instructions for running the complete Lambda Architecture pipeline. We have implemented a `Makefile` to fulfill the reproducibility requirement (8.2) and simplify execution.
+This document outlines the correct, step-by-step instructions for running the complete Lambda Architecture pipeline.
 
-## Preliminary Steps
+## 🪟 Windows Users (PowerShell)
+I have created a `run.ps1` script to replace the `Makefile` for Windows. Use the following commands in PowerShell:
+
+| Step | Command | Description |
+| :--- | :--- | :--- |
+| **Data** | `python download_data.py` | Download datasets |
+| **Infra** | `.\run.ps1 up` | Start Docker containers |
+| **Batch** | `.\run.ps1 batch-analytics` | Run Spark Job |
+| **Dash** | `.\run.ps1 dashboard` | Launch Streamlit |
+| **Stream**| `.\run.ps1 stream-pipeline` | Start Storm Pipeline |
+| **Event** | `.\run.ps1 start-producer` | Start Kafka Stream |
+| **Stop** | `.\run.ps1 down` | Shut everything down |
+
+---
+
+## 🐧 Linux Users (Makefile)
+We have implemented a `Makefile` to simplify execution on Linux/WSL.
+
+### Preliminary Steps
 Run the `download_data.py` script to download the datasets:
 ```bash
 python3 download_data.py

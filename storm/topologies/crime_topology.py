@@ -1,12 +1,12 @@
 import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 from streamparse import Grouping, Topology
-from src.spouts.kafka_spout import CrimeKafkaSpout
-from src.bolts.parse_bolt import ParseBolt
-from src.bolts.district_bolt import DistrictBolt
-from src.bolts.window_bolt import WindowBolt
-from src.bolts.anomaly_bolt import AnomalyBolt
-from src.bolts.alert_bolt import AlertBolt
+from spouts.kafka_spout import CrimeKafkaSpout
+from bolts.parse_bolt import ParseBolt
+from bolts.district_bolt import DistrictBolt
+from bolts.window_bolt import WindowBolt
+from bolts.anomaly_bolt import AnomalyBolt
+from bolts.alert_bolt import AlertBolt
 
 class CrimeTopology(Topology):
     kafka_spout = CrimeKafkaSpout.spec()

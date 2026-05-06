@@ -22,32 +22,27 @@ This project implements a Lambda Architecture for processing and analyzing publi
 - `dashboard/` - `app.py` for Streamlit visualization
 
 ## Execution
-We provide a `Makefile` to simplify starting and stopping the entire pipeline, ensuring reproducibility.
+We provide automation scripts to simplify starting and stopping the entire pipeline, ensuring reproducibility on both Linux and Windows.
 
-1. **Start Infrastructure:**
-   ```bash
-   make up
-   ```
-2. **Run Batch Analytics (Spark):**
-   ```bash
-   make batch-analytics
-   ```
-3. **Start Real-Time Topology (Storm Speed Layer):**
-   ```bash
-   make stream-pipeline
-   ```
-4. **Start Kafka Producer (Data Simulation):**
-   ```bash
-   make start-producer
-   ```
-5. **Launch Dashboard:**
-   ```bash
-   make dashboard
-   ```
-6. **Shut Down Services:**
-   ```bash
-   make down
-   ```
+**For Linux/Mac (using `make`):**
+```bash
+make up
+make batch-analytics
+make stream-pipeline
+make dashboard
+make start-producer
+```
+
+**For Windows (using PowerShell):**
+```powershell
+.\run.ps1 up
+.\run.ps1 batch-analytics
+.\run.ps1 stream-pipeline
+.\run.ps1 dashboard
+.\run.ps1 start-producer
+```
+
+For complete, detailed instructions on how to use these scripts step-by-step, please see the [Execution Instructions](EXECUTION_INSTRUCTIONS.md) document.
 
 ## Contributors
 1. sameed - Batch Analytics & Infrastructure (50%)

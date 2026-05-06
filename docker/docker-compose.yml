@@ -50,8 +50,12 @@ services:
       - ../spark:/opt/spark-apps
     command: bash -c "pip install numpy && tail -f /dev/null"
   nimbus:
-    image: 'storm:2.5.0'
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.storm
     container_name: nimbus
+    environment:
+      - IN_DOCKER=1
     command: storm nimbus
     depends_on:
       - zookeeper
@@ -62,8 +66,12 @@ services:
       - ../config:/app/config
 
   supervisor:
-    image: 'storm:2.5.0'
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.storm
     container_name: supervisor
+    environment:
+      - IN_DOCKER=1
     command: storm supervisor
     depends_on:
       - nimbus
@@ -73,7 +81,9 @@ services:
       - ../config:/app/config
 
   storm-ui:
-    image: 'storm:2.5.0'
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.storm
     container_name: storm-ui
     command: storm ui
     depends_on:

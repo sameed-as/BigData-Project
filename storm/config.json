@@ -7,6 +7,8 @@
             "user": "root",
             "nimbus": "nimbus",
             "workers": ["supervisor"],
+            "use_ssh_for_nimbus": false,
+            "use_virtualenv": false,
             "log": {
                 "path": "",
                 "max_bytes": 1000000,
