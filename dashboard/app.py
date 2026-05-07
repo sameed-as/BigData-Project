@@ -4,7 +4,7 @@ import pymongo
 import psycopg2
 import yaml
 import os
-import time
+import datetime
 
 st.set_page_config(page_title="Real-Time Crime Analytics", layout="wide")
 
@@ -49,17 +49,21 @@ with placeholder.container():
     col1, col2 = st.columns([1, 2])
 
     with col1:
-        st.subheader("🚨 Live Alerts (MongoDB)")
-        try:
-            col = get_mongo_collection()
-            alerts = list(col.find({}, {'_id': 0}).sort("timestamp", -1).limit(10))
-            if alerts:
-                for alert in alerts:
-                    st.error(f"**District {alert['district']}** | {alert['timestamp']}\nEvents: {alert['event_count']} (Threshold: {alert['threshold']})")
-            else:
-                st.info("No live alerts currently.")
-        except Exception as e:
-            st.error("Could not connect to MongoDB.")
+        @st.fragment(run_every = 3)
+        def live_alerts():
+            st.subheader(f"🚨 Live Alerts (MongoDB) last updated: {datetime.datetime.now().strftime('%H:%M:%S')}")
+            try:
+                col = get_mongo_collection()
+                alerts = list(col.find({}, {'_id': 0}).sort("timestamp", -1).limit(10))
+                if alerts:
+                    sorted_alerts = sorted(alerts, key=lambda x: x['district'])
+                    for alert in sorted_alerts:
+                        st.error(f"**District {alert['district']}** | {alert['timestamp']}\nEvents: {alert['event_count']} (Threshold: {alert['threshold']})")
+                else:
+                    st.info("No live alerts currently.")
+            except Exception as e:
+                st.error("Could not connect to MongoDB.")
+        live_alerts()
 
     with col2:
         st.subheader("🗺️ Crime Hotspots (K-Means)")

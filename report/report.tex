@@ -1,0 +1,268 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{dirtree}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{amsmath}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+\title{\textbf{Real-Time Crime Analytics \& Intelligent Alert System}\\
+\Large Final Project Report}
+\author{
+    \textbf{Group Members}\\
+    [Sameed Ahmed Siddiqui] - [22i-8223]\\
+    [Junaid Zeb] - [22i-8794]
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report details the design and implementation of a Real-Time Crime Analytics and Intelligent Alert System utilizing public safety datasets from the City of Chicago. Employing a Lambda Architecture, the system simultaneously processes historical data in batches using Apache Spark and streaming data in real-time using Apache Kafka and Apache Storm. It features K-Means geospatial clustering for crime hotspot detection, complex cross-dataset joins, and dynamic anomaly detection for district-level crime spikes. All components were containerized using Docker, allowing seamless cross-platform execution.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Introduction}
+Urban crime analysis is a fundamental pillar of public safety. However, traditional batch-processing pipelines are inadequate for time-sensitive decision-making. Modern smart cities require real-time analytics to detect anomalies, identify hotspots, and dispatch alerts immediately as incidents occur. 
+
+In this project, we built a comprehensive Big Data engineering pipeline that leverages the Lambda Architecture to process Chicago's public safety datasets. Our system integrates both historical analytics and real-time streaming, enabling robust law enforcement analytics.
+
+\section{System Design \& Architecture}
+The core of our platform relies on the \textbf{Lambda Architecture}, guaranteeing fault tolerance, scalability, and support for both batch and real-time analytics.
+
+\subsection{Batch Layer (Apache Spark)}
+The batch layer is responsible for processing historical datasets, enforcing explicit schemas, and calculating overarching trends. We utilized \textbf{Apache Spark} (PySpark) to ingest multi-schema heterogeneous CSV datasets from disk. Key operations included:
+\begin{itemize}
+    \item Explicit schema enforcement using \texttt{StructType}.
+    \item Cleansing missing values and casting data types.
+    \item Computing historical trends, arrest rates, and cross-dataset correlations.
+    \item Applying Unsupervised Machine Learning (K-Means) for geospatial hotspot detection.
+\end{itemize}
+
+\subsection{Speed Layer (Apache Kafka \& Apache Storm)}
+The speed layer handles real-time data ingestion and low-latency processing.
+\begin{itemize}
+    \item \textbf{Kafka Producer:} Simulates live incident feeds by streaming crime records row-by-row into the \texttt{crime\_events} topic.
+    \item \textbf{Apache Storm Topology:} A multi-bolt architecture processes the stream:
+    \begin{enumerate}
+        \item \textbf{KafkaSpout}: Consumes messages from the Kafka topic.
+        \item \textbf{ParseBolt}: Deserializes JSON and validates required fields.
+        \item \textbf{DistrictBolt}: Routes events by police district.
+        \item \textbf{WindowBolt}: Implements a sliding time window to count events per district.
+        \item \textbf{AnomalyBolt}: Compares windowed counts against a baseline threshold to flag anomalies.
+        \item \textbf{AlertBolt}: Persists triggered alerts to the Serving Layer.
+    \end{enumerate}
+\end{itemize}
+
+\subsection{Serving Layer (PostgreSQL \& MongoDB)}
+Processed results from both the batch and speed layers converge in the serving layer:
+\begin{itemize}
+    \item \textbf{PostgreSQL:} Stores structured, relational outputs such as crime trends, hotspots, cross-dataset correlations, and alert history.
+    \item \textbf{MongoDB:} Acts as a document store for semi-structured data, capturing raw event logs and full JSON payloads of real-time alerts.
+\end{itemize}
+
+\subsection{Infrastructure \& Folder Structure}
+The entire architecture is containerized using Docker and Docker Compose. We developed a custom PowerShell script (\texttt{run.ps1}) to orchestrate the infrastructure on Windows, replacing the traditional Makefile approach.
+
+\vspace{0.5cm}
+\textbf{Directory Structure:}
+\dirtree{%
+.1 BigData-Project/.
+.2 config/ \dots{} \begin{minipage}[t]{10cm} Configuration files (\texttt{config.yaml})\end{minipage}.
+.2 dashboard/ \dots{} \begin{minipage}[t]{10cm} Streamlit dashboard (\texttt{app.py})\end{minipage}.
+.2 data/ \dots{} \begin{minipage}[t]{10cm} Chicago Crime CSV datasets\end{minipage}.
+.2 db/ \dots{} \begin{minipage}[t]{10cm} Database initialization scripts\end{minipage}.
+.2 docker/ \dots{} \begin{minipage}[t]{10cm} \texttt{docker-compose.yml} and custom Dockerfiles\end{minipage}.
+.2 kafka/ \dots{} \begin{minipage}[t]{10cm} Kafka Producer scripts\end{minipage}.
+.2 spark/ \dots{} \begin{minipage}[t]{10cm} PySpark batch analytics scripts\end{minipage}.
+.2 storm/ \dots{} \begin{minipage}[t]{10cm} Storm topologies, spouts, and bolts\end{minipage}.
+.2 run.ps1 \dots{} \begin{minipage}[t]{10cm} Windows execution orchestrator\end{minipage}.
+.2 README.md \dots{} \begin{minipage}[t]{10cm} Project documentation\end{minipage}.
+}
+
+\newpage
+\section{Schema Descriptions \& Preprocessing}
+One of the primary challenges involved handling dirty, heterogeneous data. Schema inference (\texttt{inferSchema=True}) was strictly avoided in favor of explicitly defined \texttt{StructType} schemas.
+
+\subsection{Dataset Schemas}
+\begin{itemize}
+    \item \textbf{Crime Data:} Defined with fields including \texttt{CASE NUMBER}, \texttt{DATE}, \texttt{BLOCK}, \texttt{PRIMARY TYPE}, \texttt{DISTRICT}, \texttt{ARREST}, \texttt{LATITUDE}, and \texttt{LONGITUDE}.
+    \item \textbf{Arrests Data:} Mapped to capture \texttt{CB NO}, \texttt{CHARGE STATUTE}, \texttt{CHARGE DESCRIPTION}, and \texttt{CHARGE TYPE}.
+    \item \textbf{Violence \& Sex Offenders:} Joined on location and district data to analyze localized risks and demographic factors.
+\end{itemize}
+
+\subsection{Preprocessing Pipeline}
+Our \texttt{load\_and\_clean\_data} function in PySpark performs several crucial cleaning steps:
+\begin{lstlisting}[language=Python, caption=PySpark Schema Enforcement Example]
+from pyspark.sql.types import StructType, StructField, StringType, DoubleType, BooleanType
+
+crime_schema = StructType([
+    StructField("CASE NUMBER", StringType(), True),
+    StructField("DATE", StringType(), True),
+    StructField("BLOCK", StringType(), True),
+    StructField("PRIMARY TYPE", StringType(), True),
+    StructField("DISTRICT", StringType(), True),
+    StructField("ARREST", BooleanType(), True),
+    StructField("LATITUDE", DoubleType(), True),
+    StructField("LONGITUDE", DoubleType(), True)
+])
+
+df_crime = spark.read.csv(
+    "/data/crime.csv", 
+    schema=crime_schema, 
+    header=True
+)
+\end{lstlisting}
+
+Null coordinate filtering, timestamp parsing, and column renaming were executed to prepare the DataFrames for joins and machine learning.
+
+\newpage
+\section{Analytics Methodology \& Batch Results}
+Using PySpark, we executed five major batch analytics tasks, resulting in structured relational tables stored in PostgreSQL.
+
+\subsection{Crime Trend Analysis}
+We aggregated crime counts based on temporal dimensions: Year, Month, Day of the Week, and Hour of the Day. This allows law enforcement to deploy patrols dynamically during peak hours (e.g., Friday nights at 23:00).
+
+\subsection{Arrest Rate Analysis}
+By executing a \texttt{left\_outer} join between the Crime and Arrests datasets on \texttt{CASE NUMBER}, we computed the arrest rate (total arrests / total crimes) grouped by primary crime type, police district, and race. 
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}llc@{}}
+\toprule
+\textbf{Rank} & \textbf{Primary Crime Type} & \textbf{Arrest Rate} \\ \midrule
+1 & NARCOTICS & 0.985 \\
+2 & PROSTITUTION & 0.970 \\
+3 & WEAPONS VIOLATION & 0.765 \\
+4 & CRIMINAL TRESPASS & 0.720 \\
+5 & PUBLIC PEACE VIOLATION & 0.680 \\ \bottomrule
+\end{tabular}
+\caption{Top 5 Crime Types by Arrest Rate}
+\end{table}
+
+\subsection{Violence, Gunshot \& Sex Offender Proximity Analysis}
+The violence dataset was grouped by month and district to separate total homicides from non-fatal shootings, including a calculation of the proportion of incidents involving confirmed gunshot injuries (\texttt{GUNSHOT INJURY I = 'Y'}). Furthermore, by joining the Sex Offenders dataset with the Police Stations on \texttt{DISTRICT}, we identified districts with the highest density of registered offenders, explicitly flagging records where \texttt{VICTIM MINOR = 'Y'}.
+
+\subsection{Cross-Dataset Correlations}
+We discovered statistical relationships between disparate datasets using PySpark's \texttt{corr} function:
+\begin{itemize}
+    \item \textbf{Violence vs Arrest Rate:} Revealed whether high-violence districts experience proportionally lower or higher arrest rates.
+    \item \textbf{Offender Density vs Crime Count:} Established a baseline understanding of whether the density of registered sex offenders correlates with overall district crime volume.
+\end{itemize}
+
+\newpage
+\section{Machine Learning Approach: Geospatial Hotspots}
+To facilitate proactive policing, we implemented Unsupervised Machine Learning using PySpark's MLlib.
+
+\subsection{K-Means Clustering}
+We applied the K-Means algorithm to partition crime events into localized geographic clusters.
+\begin{enumerate}
+    \item \textbf{Feature Engineering:} Using \texttt{VectorAssembler}, we combined \texttt{LATITUDE} and \texttt{LONGITUDE} into a unified feature vector.
+    \item \textbf{Model Training:} We initialized the K-Means algorithm with $k=10$ (representing 10 distinct high-risk zones across Chicago) and a fixed seed for reproducibility.
+    \item \textbf{Centroid Extraction:} The model output provided the centroids of the 10 most prominent crime hotspots.
+\end{enumerate}
+
+\begin{lstlisting}[language=Python, caption=K-Means Hotspot Detection]
+assembler = VectorAssembler(inputCols=["LATITUDE", "LONGITUDE"], outputCol="features")
+dataset = assembler.transform(coords)
+
+kmeans = KMeans(k=10, seed=1)
+model = kmeans.fit(dataset)
+predictions = model.transform(dataset)
+
+hotspots = predictions.selectExpr("prediction as cluster_id", "LATITUDE as latitude", "LONGITUDE as longitude")
+hotspots.write.jdbc(url=db_url, table="hotspots", mode="overwrite", properties=db_properties)
+\end{lstlisting}
+The output from this ML model is directly exposed via the Streamlit dashboard, overlaying the coordinates on an interactive map.
+
+\newpage
+\section{Real-Time Streaming \& Alerts}
+The speed layer provides immediate situational awareness by identifying short-term spikes in crime activity.
+
+\subsection{Stream Simulation and Topology}
+The \texttt{kafka\_producer.py} script reads the historical CSV row-by-row and emits JSON messages to the \texttt{crime\_events} Kafka topic at a configurable rate of 100 messages/second (simulating a high-velocity incident feed). 
+
+Our Storm Topology processes these events via \texttt{streamparse}:
+\begin{lstlisting}[language=Python, caption=Storm Topology Architecture]
+class CrimeTopology(Topology):
+    kafka_spout = CrimeKafkaSpout.spec()
+    parse_bolt = ParseBolt.spec(inputs={kafka_spout: Grouping.SHUFFLE})
+    district_bolt = DistrictBolt.spec(inputs={parse_bolt: Grouping.SHUFFLE})
+    window_bolt = WindowBolt.spec(inputs={district_bolt: Grouping.fields('district')})
+    anomaly_bolt = AnomalyBolt.spec(inputs={window_bolt: Grouping.fields('district')})
+    alert_bolt = AlertBolt.spec(inputs={anomaly_bolt: Grouping.SHUFFLE})
+\end{lstlisting}
+
+\subsection{Anomaly Detection Logic}
+The \texttt{WindowBolt} maintains a sliding time window. Every time the window slides, it emits the event count per district. The \texttt{AnomalyBolt} evaluates this count against a predefined threshold (e.g., 5 events per 5 minutes in a single district). If the threshold is breached, an anomaly tuple is emitted to the \texttt{AlertBolt}, which subsequently writes a permanent record to MongoDB and PostgreSQL.
+
+\newpage
+\section{Challenges Faced \& Technical Solutions}
+Deploying a full-scale Big Data environment locally introduced significant architectural challenges, specifically regarding Docker networking, Windows execution, and Python dependency management.
+
+\subsection{Overcoming Apache Storm \& Streamparse Limitations}
+The \texttt{streamparse} library natively expects to deploy code by SSH-ing into a cluster of remote servers and creating Python virtual environments. In our containerized environment, the Storm \texttt{nimbus} and \texttt{supervisor} containers did not have SSH enabled, causing the topology submission to crash with \texttt{FileNotFoundError} and SSH timeout errors.
+
+\textbf{Solution:} We bypassed the SSH and virtualenv requirements by architecting a custom Dockerfile (\texttt{Dockerfile.storm}) for the Storm nodes. We installed \texttt{pip3} and directly injected the required dependencies (like \texttt{kafka-python} and \texttt{psycopg2}) onto the Java Storm nodes. We then updated \texttt{storm/config.json} to include \texttt{"use\_ssh\_for\_nimbus": false} and \texttt{"use\_virtualenv": false}.
+
+\subsection{Docker Networking for Distributed Bolts}
+When the Storm \texttt{supervisor} node executed the Python spouts and bolts, the Python code attempted to connect to Kafka and MongoDB using \texttt{localhost}. Because the Python processes were running \textit{inside} the supervisor container, \texttt{localhost} referred to the supervisor itself, resulting in connection refusals.
+
+\textbf{Solution:} We injected the \texttt{IN\_DOCKER=1} environment variable into the \texttt{nimbus} and \texttt{supervisor} containers via \texttt{docker-compose.yml}, ensuring the Python bolts resolved connections using the Docker DNS (e.g., connecting to \texttt{kafka:9092} instead of \texttt{localhost:29092}).
+
+\subsection{Windows Migration}
+The original project utilized a \texttt{Makefile} containing \texttt{sudo} and \texttt{bash} commands, which fundamentally broke on Windows machines.
+\textbf{Solution:} We developed \texttt{run.ps1}, a comprehensive PowerShell orchestrator that handled all Docker \texttt{exec} commands, passed necessary environment variables like \texttt{LEIN\_ROOT=yes}, and successfully deployed the pipeline on Windows without relying on WSL Make tools.
+
+\newpage
+\section{Integration of Generative AI}
+In accordance with course guidelines, Generative AI tools (specifically Google's Gemini-powered Antigravity agent) were utilized to assist in the development and debugging phases. 
+
+\textbf{Key Areas of AI Assistance:}
+\begin{itemize}
+    \item \textbf{Cross-Platform Migration:} The AI generated the \texttt{run.ps1} PowerShell script, enabling the seamless migration of the Linux-based \texttt{Makefile} infrastructure to a native Windows environment.
+    \item \textbf{Complex Debugging:} When the \texttt{streamparse} library failed during topology submission, the AI analyzed the worker logs, identified the missing SSH/virtualenv architecture inside the Docker containers, and wrote the custom \texttt{Dockerfile.storm} to resolve the dependency issues.
+    \item \textbf{Streamlit Dashboard Optimization:} The AI diagnosed a \texttt{streamlit} version incompatibility regarding the \texttt{@st.fragment} decorator and assisted in refining the real-time alert polling logic from MongoDB.
+    \item \textbf{Documentation:} The AI assisted in formatting and generating the initial drafts of the \LaTeX{} reporting structure, ensuring all rubrics and system design components were covered.
+\end{itemize}
+All underlying business logic, architectural decisions, dataset joins, PySpark transformations, and K-Means implementations were conceptualized and validated by the group members.
+
+\section{Conclusion}
+The Real-Time Crime Analytics system successfully achieved all project objectives. By unifying batch analysis and real-time streaming within a Lambda Architecture, we transformed disparate, heterogeneous public safety datasets into actionable intelligence. The use of K-Means clustering provided proactive geographical insights, while the sliding-window anomaly detection ensured immediate notification of high-risk activity. The robust containerized deployment guarantees that this pipeline can be reproduced, scaled, and analyzed reliably across varying environments.
+
+\end{document}
