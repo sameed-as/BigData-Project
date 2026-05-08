@@ -45,5 +45,5 @@ make start-producer
 For complete, detailed instructions on how to use these scripts step-by-step, please see the [Execution Instructions](EXECUTION_INSTRUCTIONS.md) document.
 
 ## Contributors
-1. sameed - Batch Analytics & Infrastructure (50%)
-2. junaidzeb - Real-Time Streaming & Dashboard (50%)
+1. Sameed Ahmed Siddiqui - [22i-8223]
+2. Junaid Zeb - [22i-8794]

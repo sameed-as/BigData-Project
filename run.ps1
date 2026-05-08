@@ -3,7 +3,7 @@
 
 param (
     [Parameter(Mandatory=$true)]
-    [ValidateSet("up", "down", "batch-analytics", "stream-pipeline", "start-producer", "dashboard", "install-libs", "clean", "help")]
+    [ValidateSet("up", "down", "batch-analytics", "stream-pipeline", "start-producer", "dashboard", "install-libs", "check-db", "check-mongo", "clean", "help")]
     $Action
 )
 
@@ -15,6 +15,8 @@ function Show-Help {
     Write-Host "  .\run.ps1 stream-pipeline  - Run the Storm streaming pipeline"
     Write-Host "  .\run.ps1 start-producer   - Start the Kafka producer"
     Write-Host "  .\run.ps1 dashboard        - Start the Streamlit dashboard"
+    Write-Host "  .\run.ps1 check-db         - Query Postgres to see batch results"
+    Write-Host "  .\run.ps1 check-mongo      - Query MongoDB to see real-time alerts"
     Write-Host "  .\run.ps1 install-libs     - Install required libraries in Spark container"
     Write-Host "  .\run.ps1 clean            - Cleanup Docker system"
 }
@@ -40,6 +42,12 @@ switch ($Action) {
     }
     "dashboard" {
         docker exec -it -e IN_DOCKER=1 runner streamlit run /app/dashboard/app.py --server.port 8501 --server.address 0.0.0.0
+    }
+    "check-db" {
+        docker exec -it postgres psql -U admin -d crime_db -c "SELECT * FROM crime_trends LIMIT 5; SELECT * FROM top_10_arrest_rates;"
+    }
+    "check-mongo" {
+        docker exec -it mongo mongosh crime_db --eval "db.alert_logs.find().sort({timestamp: -1}).limit(5)"
     }
     "install-libs" {
         docker exec -it spark pip install numpy
